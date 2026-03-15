@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"os"
+	"subscription_manager/utils"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -10,7 +13,12 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 
 	app.Use(logger.New())
 
+	user := app.Group("/user")
+	user.Post("/register", RegisterUser)
+
 	subscription := app.Group("/subscription")
+		subscription.Use(utils.JWTMiddleware([]byte(os.Getenv("JWT_SECRET"))))
+
 	subscription.Post("/", AddSubscription)
 	subscription.Get("/", GetSubscriptions)
 	subscription.Get("/:id", GetSubscription)

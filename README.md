@@ -16,10 +16,11 @@ Environment Configuration
 
 Create a .env file in the root directory of the project and add the required database configuration.
 
-DB_HOST=
-DB_PORT=
-DB_USER=
-DB_PASSWORD=
-DB_NAME=
+DB_HOST
+DB_PORT
+DB_USER
+DB_PASSWORD
+DB_NAME
+JWT_SECRET
 
 
