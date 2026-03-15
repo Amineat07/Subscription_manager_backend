@@ -1,18 +1,18 @@
 package main
 
 import (
-	"github.com/gofiber/fiber/v3"
+	"subscription_manager/database"
+	"subscription_manager/handler"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
 
+	connection := database.InitiateDataBase()
 	app := fiber.New()
 
-	app.Get("/", func(c fiber.Ctx) error {
-
-		return c.SendString("Hello World!")
-
-	})
+	handler.SetupRouter(app,connection)
 
 	app.Listen(":3000")
 

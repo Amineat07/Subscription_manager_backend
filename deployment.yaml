@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: subscription-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: subscription-backend
+  template:
+    metadata:
+      labels:
+        app: subscription-backend
+    spec:
+      containers:
+      - name: subscription-backend
+        image: subscription-backend
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000
