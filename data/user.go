@@ -11,10 +11,16 @@ type UserRegisterRequest struct {
 }
 
 type UserResponse struct {
+	ID         int64     `json:"user_ID"`
 	FirstName  string    `json:"first_name"`
 	LastName   string    `json:"last_name"`
 	Email      string    `json:"email"`
 	IsAdmin    bool      `json:"is_admin"`
 	Created_at time.Time `json:"created_at"`
 	Updated_at time.Time `json:"updated_at"`
+}
+
+type UserLogin struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }

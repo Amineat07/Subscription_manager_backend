@@ -5,11 +5,12 @@ import (
 	"subscription_manager/data"
 	"subscription_manager/database"
 	"subscription_manager/utils"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterUser(c *fiber.Ctx) error {
+func UserRegister(c *fiber.Ctx) error {
 	var req_user data.UserRegisterRequest
 
 	if err := c.BodyParser(&req_user); err != nil {
@@ -22,10 +23,23 @@ func RegisterUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("Validation error: %s", err))
 	}
 
+	if !utils.EmailValidation(req_user.Email) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Please enter valid email",
+		})
+	}
+
+	if !utils.PasswordValidation(req_user.Password) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Please enter valid password",
+		})
+	}
+
 	sqlstatement := `INSERT INTO public.users (first_name,last_name,email,password,is_admin,created_at,updated_at)
 	VALUES($1,$2,$3,$4,$5,NOW(),NOW())
-	RETURNING first_name, last_name, email, is_admin, created_at, updated_at`
+	RETURNING id,first_name, last_name, email, is_admin, created_at, updated_at`
 
+	isAdmin := false
 	var inserted data.UserResponse
 	err := database.InitiateDataBase().QueryRow(
 		c.Context(),
@@ -34,8 +48,9 @@ func RegisterUser(c *fiber.Ctx) error {
 		req_user.LastName,
 		req_user.Email,
 		utils.GeneratePassword(req_user.Password),
-		req_user.IsAdmin,
+		isAdmin,
 	).Scan(
+		&inserted.ID,
 		&inserted.FirstName,
 		&inserted.LastName,
 		&inserted.Email,
@@ -51,4 +66,90 @@ func RegisterUser(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(inserted)
+}
+
+func UserLogin(c *fiber.Ctx) error {
+	var reqUser data.UserLogin
+
+	if err := c.BodyParser(&reqUser); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "invalid request body",
+		})
+	}
+
+	if err := utils.Validate(reqUser); err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("Validation error: %s", err))
+	}
+
+	sqlStatement := `SELECT id, first_name, last_name, email, password, is_admin, created_at, updated_at 
+	                 FROM public.users WHERE email = $1 AND deleted_at IS NULL`
+
+	user := data.UserResponse{}
+	var hashedPassword string
+	row := database.InitiateDataBase().QueryRow(
+		c.Context(),
+		sqlStatement,
+		reqUser.Email,
+	)
+	err := row.Scan(
+		&user.ID,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&hashedPassword,
+		&user.IsAdmin,
+		&user.Created_at,
+		&user.Updated_at,
+	)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Invalid email or password",
+		})
+	}
+
+	if !utils.ComparePassword(hashedPassword, reqUser.Password) {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Invalid email or password",
+		})
+	}
+
+	role := "notAdmin"
+	if user.IsAdmin {
+		role = "admin"
+	}
+
+	token, err := utils.GenerateToken(uint(user.ID), role)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to generate token",
+		})
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "jwt",
+		Value:    token,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: "Strict",
+	})
+
+	return c.Status(fiber.StatusOK).JSON(user)
+}
+
+func UserLogout(c *fiber.Ctx) error {
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "jwt",
+		Value:    "",
+		Expires:  time.Unix(0, 0),
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: fiber.CookieSameSiteStrictMode,
+	})
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Logged out successfully",
+	})
+
 }

@@ -14,11 +14,13 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	app.Use(logger.New())
 
 	user := app.Group("/user")
-	user.Post("/register", RegisterUser)
+	user.Post("/register", UserRegister)
+	user.Post("/login", UserLogin)
+	user.Use(utils.JWTMiddleware([]byte(os.Getenv("JWT_SECRET"))))
+	user.Post("/logout", UserLogout)
 
 	subscription := app.Group("/subscription")
-		subscription.Use(utils.JWTMiddleware([]byte(os.Getenv("JWT_SECRET"))))
-
+	subscription.Use(utils.JWTMiddleware([]byte(os.Getenv("JWT_SECRET"))))
 	subscription.Post("/", AddSubscription)
 	subscription.Get("/", GetSubscriptions)
 	subscription.Get("/:id", GetSubscription)
