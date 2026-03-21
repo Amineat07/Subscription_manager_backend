@@ -118,7 +118,7 @@ func UserLogin(c *fiber.Ctx) error {
 		role = "admin"
 	}
 
-	token, err := utils.GenerateToken(uint(user.ID), role)
+	token, err := utils.GenerateToken(uint(user.ID), role, user.Email)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Failed to generate token",

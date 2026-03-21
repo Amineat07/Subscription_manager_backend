@@ -10,10 +10,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateToken(id uint, role string) (string, error) {
+func GenerateToken(id uint, role string, email string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": id,
 		"role":    role,
+		"email":   email,
 		"exp":     jwt.NewNumericDate(time.Now().Add(72 * time.Hour)),
 	})
 
@@ -70,10 +71,14 @@ func JWTMiddleware(secret []byte) fiber.Handler {
 				"message": "invalid user_id in token",
 			})
 		}
-
 		c.Locals("user_id", userID)
+
 		if role, ok := claims["role"].(string); ok {
 			c.Locals("role", role)
+		}
+
+		if email, ok := claims["email"].(string); ok {
+			c.Locals("userEmail", email)
 		}
 
 		return c.Next()

@@ -7,7 +7,7 @@ type UserRegisterRequest struct {
 	LastName  string `json:"last_name" validate:"required"`
 	Email     string `json:"email" validate:"required"`
 	Password  string `json:"password" validate:"required"`
-	IsAdmin   bool   `json:"is_admin" validate:"required"`
+	IsAdmin   bool   `json:"is_admin"`
 }
 
 type UserResponse struct {
