@@ -174,6 +174,7 @@ func AddSubscription(c *fiber.Ctx) error {
 func GetSubscriptions(c *fiber.Ctx) error {
 	sqlStatement := `
 		SELECT 
+			s.id,
 			s.subscription_name,
 			s.typ,
 			s.contract_number,
@@ -220,6 +221,7 @@ func GetSubscriptions(c *fiber.Ctx) error {
 		var s data.SubscriptionResponse
 
 		err := rows.Scan(
+			&s.ID,
 			&s.SubscriptionName,
 			&s.Typ,
 			&s.ContractNumber,
@@ -271,6 +273,7 @@ func GetSubscription(c *fiber.Ctx) error {
 
 	sqlStatement := `
 		SELECT 
+			s.id,
 			s.subscription_name,
 			s.typ,
 			s.contract_number,
@@ -306,6 +309,7 @@ func GetSubscription(c *fiber.Ctx) error {
 	var s data.SubscriptionResponse
 
 	err = database.InitiateDataBase().QueryRow(c.Context(), sqlStatement, subscriptionID).Scan(
+		&s.ID,
 		&s.SubscriptionName,
 		&s.Typ,
 		&s.ContractNumber,

@@ -48,7 +48,7 @@ type SubscriptionResponse struct {
 	PaymentMethod      string          `json:"payment_method"`
 	BillingPeriod      string          `json:"billing_period"`
 	Note               string          `json:"note"`
-	CreatedBy          string          `json:"created_by"`
+	CreatedBy          *string         `json:"created_by"`
 	UpdatedBy          *string         `json:"updated_by"`
 	DeletedBy          *string         `json:"deleted_by"`
 	CancellationPeriod int64           `json:"cancellation_period"`
@@ -69,7 +69,6 @@ type TagResponse struct {
 	TagName  string `json:"tag_name"`
 	TagColor string `json:"tag_color"`
 }
-
 
 type SubscriptionRequestUpdate struct {
 	ContractStartDate       *time.Time               `json:"contract_start_date"`
