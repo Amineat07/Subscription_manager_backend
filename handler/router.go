@@ -22,7 +22,7 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	subscription := app.Group("/subscription")
 	subscription.Use(utils.JWTMiddleware([]byte(os.Getenv("JWT_SECRET"))))
 	subscription.Post("/", AddSubscription)
-	subscription.Get("/", GetSubscriptions
+	subscription.Get("/", GetSubscriptions)
 	subscription.Get("/:id", GetSubscription)
 	subscription.Patch("/:id", UpdateSubscription)
 	subscription.Delete("/:id", DeleteSubscription)
