@@ -10,6 +10,8 @@ import (
 func main() {
 
 	connection := database.InitiateDataBase()
+	defer connection.Close()
+
 	app := fiber.New()
 
 	handler.SetupRouter(app,connection)
