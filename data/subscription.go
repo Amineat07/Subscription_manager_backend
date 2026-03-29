@@ -3,20 +3,19 @@ package data
 import "time"
 
 type SubscriptionRequest struct {
-	ContractStartDate  time.Time      `json:"contract_start_date"`
-	ContractEndDate    time.Time      `json:"contract_end_date"`
 	CompanyRequest     CompanyRequest `json:"company"`
 	TagRequest         TagRequest     `json:"tag"`
+	ContractStartDate  *string        `json:"contract_start_date"`
+	ContractEndDate    *string        `json:"contract_end_date"`
 	SubscriptionName   string         `json:"subscription_name" validate:"required"`
-	Typ                string         `json:"typ"`
+	Typ                *string        `json:"typ"`
 	ContractNumber     string         `json:"contract_number"`
 	CustomerNumber     string         `json:"customer_number"`
 	PaymentMethod      string         `json:"payment_method" validate:"required"`
 	BillingPeriod      string         `json:"billing_period" validate:"required"`
-	CreatedBy          string         `json:"created_by"`
 	Note               string         `json:"note"`
-	CancellationPeriod int64          `json:"cancellation_period"`
-	BillingDate        int64          `json:"billing_date" validate:"required"`
+	CancellationPeriod *int64         `json:"cancellation_period"`
+	BillingDate        *int64         `json:"billing_date" validate:"required"`
 	Price              float64        `json:"price" validate:"required"`
 }
 
@@ -34,8 +33,8 @@ type TagRequest struct {
 
 type SubscriptionResponse struct {
 	ID                 int64           `json:"id"`
-	ContractStartDate  time.Time       `json:"contract_start_date"`
-	ContractEndDate    time.Time       `json:"contract_end_date"`
+	ContractStartDate  *time.Time      `json:"contract_start_date"`
+	ContractEndDate    *time.Time      `json:"contract_end_date"`
 	CreatedAt          time.Time       `json:"created_at"`
 	UpdatedAt          *time.Time      `json:"updated_at"`
 	DeletedAt          *time.Time      `json:"deleted_at"`
@@ -51,7 +50,7 @@ type SubscriptionResponse struct {
 	CreatedBy          *string         `json:"created_by"`
 	UpdatedBy          *string         `json:"updated_by"`
 	DeletedBy          *string         `json:"deleted_by"`
-	CancellationPeriod int64           `json:"cancellation_period"`
+	CancellationPeriod *int64          `json:"cancellation_period"`
 	BillingDate        int64           `json:"billing_date"`
 	Price              float64         `json:"price"`
 }

@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"fmt"
 	"regexp"
+	"time"
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
@@ -44,4 +46,25 @@ func PasswordValidation(s string) bool {
 func EmailValidation(e string) bool {
 	emailRegex := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
 	return emailRegex.MatchString(e)
+}
+
+func ParseDate(s *string) (*time.Time, error) {
+    if s == nil || *s == "" {
+        return nil, nil
+    }
+
+    formats := []string{
+        "2006-01-02",
+        time.RFC3339,
+        "2006-01-02T15:04:05Z",
+    }
+
+    for _, format := range formats {
+        t, err := time.Parse(format, *s)
+        if err == nil {
+            return &t, nil
+        }
+    }
+
+    return nil, fmt.Errorf("cannot parse date: %s", *s)
 }

@@ -73,7 +73,13 @@ func UserLogin(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(&reqUser); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "invalid request body",
+			"message": "Please provide valid login data",
+		})
+	}
+
+	if reqUser.Email == "" || reqUser.Password == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Email and password are required",
 		})
 	}
 
@@ -144,7 +150,7 @@ func UserLogout(c *fiber.Ctx) error {
 		Value:    "",
 		Expires:  time.Unix(0, 0),
 		HTTPOnly: true,
-		Secure:   true,
+		Secure:   false,
 		SameSite: fiber.CookieSameSiteStrictMode,
 	})
 

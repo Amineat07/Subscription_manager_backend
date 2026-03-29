@@ -13,6 +13,8 @@ import (
 func AddSubscription(c *fiber.Ctx) error {
 	var req data.SubscriptionRequest
 
+	body := c.Body()
+	fmt.Println(string(body))
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "invalid request body",
@@ -74,10 +76,19 @@ func AddSubscription(c *fiber.Ctx) error {
 
 	createdBy := c.Locals("userEmail").(string)
 
+	startDate, err := utils.ParseDate(req.ContractStartDate)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid contract_start_date"})
+	}
+	endDate, err := utils.ParseDate(req.ContractEndDate)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid contract_end_date"})
+	}
+
 	var subscriptionID int
 	err = tx.QueryRow(c.Context(), `
 		INSERT INTO subscriptions (
-			subscription_name, typ, contract_number, costumer_number,
+			subscription_name, typ, contract_number, customer_number,
 			contract_start_date, contract_end_date,
 			cancellation_period, payment_method,
 			billing_date, billing_period, price, note,
@@ -90,8 +101,8 @@ func AddSubscription(c *fiber.Ctx) error {
 		req.Typ,
 		req.ContractNumber,
 		req.CustomerNumber,
-		req.ContractStartDate,
-		req.ContractEndDate,
+		startDate,
+		endDate,
 		req.CancellationPeriod,
 		req.PaymentMethod,
 		req.BillingDate,
@@ -111,32 +122,35 @@ func AddSubscription(c *fiber.Ctx) error {
 
 	err = tx.QueryRow(c.Context(), `
 		SELECT 
+			s.id,
 			s.subscription_name,
-			s.typ,
-			s.contract_number,
-			s.costumer_number,
+			COALESCE(s.typ, ''),
+			COALESCE(s.contract_number, ''),
+			COALESCE(s.customer_number, ''),
 			s.contract_start_date,
 			s.contract_end_date,
 			s.cancellation_period,
-			s.payment_method,
+			COALESCE(s.payment_method, ''),
 			s.billing_date,
-			s.billing_period,
+			COALESCE(s.billing_period, ''),
 			s.price,
-			s.note,
+			COALESCE(s.note, ''),
+			s.created_at,
 			s.created_by,
 			c.id,
-			c.company_name,
-			c.category,
-			c.contact_detail,
-			c.link,
-			t.id,
-			t.tag_name,
-			t.color
+        	c.company_name,
+        	COALESCE(c.category, ''),
+        	COALESCE(c.contact_detail, ''),
+        	COALESCE(c.link, ''),
+        	t.id,
+        	COALESCE(t.tag_name, ''),
+        	COALESCE(t.color, '')
 		FROM subscriptions s
 		JOIN companies c ON s.company_id = c.id
 		JOIN tags t ON s.tag_id = t.id
 		WHERE s.id = $1
 	`, subscriptionID).Scan(
+		&res.ID,
 		&res.SubscriptionName,
 		&res.Typ,
 		&res.ContractNumber,
@@ -149,6 +163,7 @@ func AddSubscription(c *fiber.Ctx) error {
 		&res.BillingPeriod,
 		&res.Price,
 		&res.Note,
+		&res.CreatedAt,
 		&res.CreatedBy,
 		&res.Company.ID,
 		&res.Company.CompanyName,
@@ -161,11 +176,16 @@ func AddSubscription(c *fiber.Ctx) error {
 	)
 
 	if err != nil {
-		return err
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
 	}
 
 	if err := tx.Commit(c.Context()); err != nil {
-		return err
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(res)
@@ -178,7 +198,7 @@ func GetSubscriptions(c *fiber.Ctx) error {
 			s.subscription_name,
 			s.typ,
 			s.contract_number,
-			s.costumer_number,
+			s.customer_number,
 			s.contract_start_date,
 			s.contract_end_date,
 			s.cancellation_period,
@@ -277,7 +297,7 @@ func GetSubscription(c *fiber.Ctx) error {
 			s.subscription_name,
 			s.typ,
 			s.contract_number,
-			s.costumer_number,
+			s.customer_number,
 			s.contract_start_date,
 			s.contract_end_date,
 			s.cancellation_period,
@@ -423,7 +443,7 @@ func UpdateSubscription(c *fiber.Ctx) error {
 	SET subscription_name    = COALESCE($1, subscription_name),
 	    typ                  = COALESCE($2, typ),
 	    contract_number      = COALESCE($3, contract_number),
-	    costumer_number      = COALESCE($4, costumer_number),
+	    customer_number      = COALESCE($4, customer_number),
 	    contract_start_date  = COALESCE($5, contract_start_date),
 	    contract_end_date    = COALESCE($6, contract_end_date),
 	    cancellation_period  = COALESCE($7, cancellation_period),
@@ -439,7 +459,7 @@ func UpdateSubscription(c *fiber.Ctx) error {
 	          subscription_name,
 	          typ,
 	          contract_number,
-	          costumer_number,
+	          customer_number,
 	          contract_start_date,
 	          contract_end_date,
 	          cancellation_period,
