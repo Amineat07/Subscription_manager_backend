@@ -143,6 +143,54 @@ func UserLogin(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(user)
 }
 
+func GetUser(c *fiber.Ctx) error {
+
+	userIDVal := c.Locals("user_id")
+	if userIDVal == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized",
+		})
+	}
+
+	userID, ok := userIDVal.(int64)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "invalid user id type",
+		})
+	}
+
+	sqlStatement := `
+		SELECT 
+			id,
+			first_name,
+			last_name,
+			email,
+			created_at
+		FROM users
+		WHERE id = $1 AND deleted_at IS NULL
+	`
+
+	var u data.UserResponse
+
+	err := database.InitiateDataBase().
+		QueryRow(c.Context(), sqlStatement, userID).
+		Scan(
+			&u.ID,
+			&u.FirstName,
+			&u.LastName,
+			&u.Email,
+			&u.Created_at,
+		)
+
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "user not found",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(u)
+}
+
 func UserLogout(c *fiber.Ctx) error {
 
 	c.Cookie(&fiber.Cookie{

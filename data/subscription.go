@@ -70,28 +70,27 @@ type TagResponse struct {
 }
 
 type SubscriptionRequestUpdate struct {
-	ContractStartDate       *time.Time               `json:"contract_start_date"`
-	ContractEndDate         *time.Time               `json:"contract_end_date"`
 	CompanyRequestUpdate    *CompanyRequestUpdate    `json:"company"`
 	TagRequestUpdateRequest *TagRequestUpdateRequest `json:"tag"`
-	SubscriptionName        *string                  `json:"subscription_name"`
+	ContractStartDate       *string                  `json:"contract_start_date"`
+	ContractEndDate         *string                  `json:"contract_end_date"`
+	SubscriptionName        string                   `json:"subscription_name"`
 	Typ                     *string                  `json:"typ"`
-	ContractNumber          *string                  `json:"contract_number"`
-	CustomerNumber          *string                  `json:"customer_number"`
-	PaymentMethod           *string                  `json:"payment_method"`
-	BillingPeriod           *string                  `json:"billing_period"`
-	CreatedBy               string                   `json:"created_by"`
-	Note                    *string                  `json:"note"`
+	ContractNumber          string                   `json:"contract_number"`
+	CustomerNumber          string                   `json:"customer_number"`
+	PaymentMethod           string                   `json:"payment_method"`
+	BillingPeriod           string                   `json:"billing_period"`
+	Note                    string                   `json:"note"`
 	CancellationPeriod      *int64                   `json:"cancellation_period"`
 	BillingDate             *int64                   `json:"billing_date"`
-	Price                   *float64                 `json:"price"`
+	Price                   float64                  `json:"price"`
 }
 
 type CompanyRequestUpdate struct {
-	CompanyName   *string `json:"company_name"`
-	Category      *string `json:"category"`
-	ContactDetail *string `json:"contact_detail"`
-	Link          *string `json:"link"`
+	CompanyName   string `json:"company_name"`
+	Category      string `json:"category"`
+	ContactDetail string `json:"contact_detail"`
+	Link          string `json:"link"`
 }
 
 type TagRequestUpdateRequest struct {

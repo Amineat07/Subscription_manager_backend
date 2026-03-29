@@ -196,17 +196,17 @@ func GetSubscriptions(c *fiber.Ctx) error {
 		SELECT 
 			s.id,
 			s.subscription_name,
-			s.typ,
-			s.contract_number,
-			s.customer_number,
+			COALESCE(s.typ, ''),
+			COALESCE(s.contract_number, ''),
+			COALESCE(s.customer_number, ''),
 			s.contract_start_date,
 			s.contract_end_date,
 			s.cancellation_period,
-			s.payment_method,
+			COALESCE(s.payment_method, ''),
 			s.billing_date,
-			s.billing_period,
+			COALESCE(s.billing_period, ''),
 			s.price,
-			s.note,
+			COALESCE(s.note, ''),
 			s.created_by,
 			s.updated_by,
 			s.deleted_by,
@@ -215,12 +215,12 @@ func GetSubscriptions(c *fiber.Ctx) error {
 			s.deleted_at,
 			c.id,
 			c.company_name,
-			c.category,
-			c.contact_detail,
-			c.link,
+			COALESCE(c.category, ''),
+			COALESCE(c.contact_detail, ''),
+			COALESCE(c.link, ''),
 			t.id,
-			t.tag_name,
-			t.color
+			COALESCE(t.tag_name, ''),
+			COALESCE(t.color, '')
 		FROM subscriptions s
 		JOIN companies c ON s.company_id = c.id
 		JOIN tags t ON s.tag_id = t.id
