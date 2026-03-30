@@ -191,6 +191,46 @@ func GetUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(u)
 }
 
+func GetMyAuthInfo(c *fiber.Ctx) error {
+	userID := c.Locals("user_id")
+	if userID == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "user ID not found",
+		})
+	}
+
+	sqlStatement := `
+		SELECT 
+			id,
+			first_name,
+			last_name,
+			email,
+			created_at
+		FROM users
+		WHERE id = $1 AND deleted_at IS NULL
+	`
+
+	var u data.UserResponse
+
+	err := database.InitiateDataBase().
+		QueryRow(c.Context(), sqlStatement, userID).
+		Scan(
+			&u.ID,
+			&u.FirstName,
+			&u.LastName,
+			&u.Email,
+			&u.Created_at,
+		)
+
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "user not found",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(u)
+}
+
 func UserLogout(c *fiber.Ctx) error {
 
 	c.Cookie(&fiber.Cookie{
@@ -206,4 +246,46 @@ func UserLogout(c *fiber.Ctx) error {
 		"message": "Logged out successfully",
 	})
 
+}
+
+func DeleteMyAccount(c *fiber.Ctx) error {
+
+	userID := c.Locals("user_id")
+	if userID == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "user ID not found",
+		})
+	}
+
+		sqlStatement := `
+		UPDATE public.users
+		SET deleted_at = NOW(),
+			deleted_by = $1
+		WHERE id = $1
+	`
+	result, err := database.InitiateDataBase().Exec(c.Context(), sqlStatement, userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	if result.RowsAffected() == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "subscription not found",
+		})
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "jwt",
+		Value:    "",
+		Expires:  time.Unix(0, 0),
+		HTTPOnly: true,
+		Secure:   false,
+		SameSite: fiber.CookieSameSiteStrictMode,
+	})
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "user deleted successfully",
+	})
 }
