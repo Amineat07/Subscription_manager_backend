@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -44,8 +45,12 @@ func JWTMiddleware(secret []byte) fiber.Handler {
 		}
 
 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			}
 			return secret, nil
 		})
+
 		if err != nil || !token.Valid {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"message": "invalid token",
@@ -82,5 +87,26 @@ func JWTMiddleware(secret []byte) fiber.Handler {
 		}
 
 		return c.Next()
+	}
+}
+
+func RequireRole(roles ...string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		role, ok := c.Locals("role").(string)
+		if !ok || role == "" {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"message": "forbidden: no role assigned",
+			})
+		}
+
+		for _, r := range roles {
+			if role == r {
+				return c.Next()
+			}
+		}
+
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "forbidden: insufficient permissions",
+		})
 	}
 }

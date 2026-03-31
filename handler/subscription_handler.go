@@ -199,6 +199,7 @@ func AddSubscription(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(res)
 }
 
+// todo for admin and should adjust to fetch subscription by user ID
 func GetSubscriptions(c *fiber.Ctx) error {
 	sqlStatement := `
 		SELECT 
@@ -289,7 +290,7 @@ func GetSubscriptions(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(subs)
 }
 
-func GetSubscriptionByUserID(c *fiber.Ctx) error {
+func GetSubscriptionsByUserID(c *fiber.Ctx) error {
 
 	userID := c.Locals("user_id")
 	if userID == nil {
@@ -388,7 +389,15 @@ func GetSubscriptionByUserID(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(subs)
 }
 
-func GetSubscription(c *fiber.Ctx) error {
+func GetSubscriptionByUserID(c *fiber.Ctx) error {
+
+	userID := c.Locals("user_id")
+	if userID == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "user ID not found",
+		})
+	}
+
 	id := c.Params("id")
 
 	subscriptionID, err := strconv.ParseInt(id, 10, 64)
@@ -430,12 +439,14 @@ func GetSubscription(c *fiber.Ctx) error {
 		FROM subscriptions s
 		JOIN companies c ON s.company_id = c.id
 		JOIN tags t ON s.tag_id = t.id
-		WHERE s.id = $1 AND s.deleted_at IS NULL
+		WHERE s.id = $1
+          AND s.user_id = $2                            
+          AND s.deleted_at IS NULL
 	`
 
 	var s data.SubscriptionResponse
 
-	err = database.InitiateDataBase().QueryRow(c.Context(), sqlStatement, subscriptionID).Scan(
+	err = database.InitiateDataBase().QueryRow(c.Context(), sqlStatement, subscriptionID, userID).Scan(
 		&s.ID,
 		&s.SubscriptionName,
 		&s.Typ,
@@ -474,119 +485,141 @@ func GetSubscription(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(s)
 }
 
-func UpdateSubscription(c *fiber.Ctx) error {
-	id := c.Params("id")
+func UpdateSubscriptionByUserID(c *fiber.Ctx) error {
 
+	userID, ok := c.Locals("user_id").(int64)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized",
+		})
+	}
+
+	userEmail, ok := c.Locals("userEmail").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized",
+		})
+	}
+
+	id := c.Params("id")
 	subscriptionID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid id"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid id",
+		})
 	}
 
 	var req data.SubscriptionRequestUpdate
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid request body"})
-	}
-
-	userEmail := c.Locals("userEmail")
-	if userEmail == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user email not found"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid request body",
+		})
 	}
 
 	db := database.InitiateDataBase()
 	tx, err := db.Begin(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to start transaction"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "failed to start transaction",
+		})
 	}
 	defer tx.Rollback(c.Context())
 
-	var companyID, tagID int64
+	var companyID, tagID *int64
 	err = tx.QueryRow(c.Context(), `
-		SELECT company_id, tag_id 
-		FROM subscriptions 
-		WHERE id = $1 AND deleted_at IS NULL
-	`, subscriptionID).Scan(&companyID, &tagID)
+        SELECT company_id, tag_id 
+        FROM subscriptions 
+        WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+    `, subscriptionID, userID).Scan(&companyID, &tagID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "subscription not found"})
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "subscription not found",
+		})
 	}
 
-	if req.CompanyRequestUpdate != nil {
+	if req.CompanyRequestUpdate != nil && companyID != nil {
 		_, err = tx.Exec(c.Context(), `
-			UPDATE companies
-			SET company_name   = COALESCE($1, company_name),
-			    category       = COALESCE($2, category),
-			    contact_detail = COALESCE($3, contact_detail),
-			    link           = COALESCE($4, link)
-			WHERE id = $5
-		`,
+            UPDATE companies
+            SET company_name   = COALESCE(NULLIF($1, ''), company_name),
+                category       = COALESCE(NULLIF($2, ''), category),
+                contact_detail = COALESCE(NULLIF($3, ''), contact_detail),
+                link           = COALESCE(NULLIF($4, ''), link),
+                updated_at     = NOW()
+            WHERE id = $5 AND owner_id = $6
+        `,
 			req.CompanyRequestUpdate.CompanyName,
 			req.CompanyRequestUpdate.Category,
 			req.CompanyRequestUpdate.ContactDetail,
 			req.CompanyRequestUpdate.Link,
-			companyID,
+			*companyID,
+			userID,
 		)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": err.Error(),
+			})
 		}
 	}
 
-	if req.TagRequestUpdateRequest != nil {
+	if req.TagRequestUpdateRequest != nil && tagID != nil {
 		_, err = tx.Exec(c.Context(), `
-			UPDATE tags
-			SET tag_name = COALESCE($1, tag_name),
-			    color    = COALESCE($2, color)
-			WHERE id = $3
-		`,
+            UPDATE tags
+            SET tag_name = COALESCE(NULLIF($1, ''), tag_name),
+                color    = COALESCE(NULLIF($2, ''), color)
+            WHERE id = $3 AND user_id = $4
+        `,
 			req.TagRequestUpdateRequest.TagName,
 			req.TagRequestUpdateRequest.TagColor,
-			tagID,
+			*tagID,
+			userID,
 		)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": err.Error(),
+			})
 		}
 	}
 
-	sqlStatement := `
-	UPDATE subscriptions
-	SET subscription_name    = COALESCE($1, subscription_name),
-	    typ                  = COALESCE($2, typ),
-	    contract_number      = COALESCE($3, contract_number),
-	    customer_number      = COALESCE($4, customer_number),
-	    contract_start_date  = COALESCE($5, contract_start_date),
-	    contract_end_date    = COALESCE($6, contract_end_date),
-	    cancellation_period  = COALESCE($7, cancellation_period),
-	    payment_method       = COALESCE($8, payment_method),
-	    billing_date         = COALESCE($9, billing_date),
-	    billing_period       = COALESCE($10, billing_period),
-	    price                = COALESCE($11, price),
-	    note                 = COALESCE($12, note),
-	    updated_at           = NOW(),
-	    updated_by           = $13
-	WHERE id = $14 AND deleted_at IS NULL
-	RETURNING id,
-	          subscription_name,
-	          typ,
-	          contract_number,
-	          customer_number,
-	          contract_start_date,
-	          contract_end_date,
-	          cancellation_period,
-	          payment_method,
-	          billing_date,
-	          billing_period,
-	          price,
-	          note,
-	          created_at,
-	          updated_at,
-	          deleted_at,
-	          created_by,
-	          updated_by,
-	          deleted_by
-	`
-
 	var updated data.SubscriptionResponse
-	err = tx.QueryRow(
-		c.Context(),
-		sqlStatement,
+	err = tx.QueryRow(c.Context(), `
+        UPDATE subscriptions
+        SET subscription_name   = COALESCE(NULLIF($1,  ''), subscription_name),
+            typ                 = COALESCE(NULLIF($2,  ''), typ),
+            contract_number     = COALESCE(NULLIF($3,  ''), contract_number),
+            customer_number     = COALESCE(NULLIF($4,  ''), customer_number),
+            contract_start_date = COALESCE($5,  contract_start_date),
+            contract_end_date   = COALESCE($6,  contract_end_date),
+            cancellation_period = COALESCE($7,  cancellation_period),
+            payment_method      = COALESCE(NULLIF($8,  ''), payment_method),
+            billing_date        = COALESCE($9,  billing_date),
+            billing_period      = COALESCE(NULLIF($10, ''), billing_period),
+            price               = COALESCE($11, price),
+            note                = COALESCE(NULLIF($12, ''), note),
+            updated_at          = NOW(),
+            updated_by          = $13
+        WHERE id = $14
+          AND user_id = $15
+          AND deleted_at IS NULL
+        RETURNING id,
+                  subscription_name,
+                  typ,
+                  contract_number,
+                  customer_number,
+                  contract_start_date,
+                  contract_end_date,
+                  cancellation_period,
+                  payment_method,
+                  billing_date,
+                  billing_period,
+                  price,
+                  note,
+                  created_at,
+                  updated_at,
+                  deleted_at,
+                  created_by,
+                  updated_by,
+                  deleted_by
+    `,
 		req.SubscriptionName,
 		req.Typ,
 		req.ContractNumber,
@@ -599,8 +632,9 @@ func UpdateSubscription(c *fiber.Ctx) error {
 		req.BillingPeriod,
 		req.Price,
 		req.Note,
-		userEmail.(string),
+		userEmail,
 		subscriptionID,
+		userID,
 	).Scan(
 		&updated.ID,
 		&updated.SubscriptionName,
@@ -623,39 +657,46 @@ func UpdateSubscription(c *fiber.Ctx) error {
 		&updated.DeletedBy,
 	)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": err.Error()})
+		}
 	}
 
-	err = tx.QueryRow(c.Context(), `
-		SELECT id, company_name, category, contact_detail, link
-		FROM companies
-		WHERE id = $1
-	`, companyID).Scan(
-		&updated.Company.ID,
-		&updated.Company.CompanyName,
-		&updated.Company.Category,
-		&updated.Company.ContactDetail,
-		&updated.Company.Link,
-	)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	if companyID != nil {
+		err = tx.QueryRow(c.Context(), `
+            SELECT id, company_name, category, contact_detail, link
+            FROM companies WHERE id = $1
+        `, *companyID).Scan(
+			&updated.Company.ID,
+			&updated.Company.CompanyName,
+			&updated.Company.Category,
+			&updated.Company.ContactDetail,
+			&updated.Company.Link,
+		)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
 	}
 
-	err = tx.QueryRow(c.Context(), `
-		SELECT id, tag_name, color
-		FROM tags
-		WHERE id = $1
-	`, tagID).Scan(
-		&updated.Tag.ID,
-		&updated.Tag.TagName,
-		&updated.Tag.TagColor,
-	)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	if tagID != nil {
+		err = tx.QueryRow(c.Context(), `
+            SELECT id, tag_name, color
+            FROM tags WHERE id = $1
+        `, *tagID).Scan(
+			&updated.Tag.ID,
+			&updated.Tag.TagName,
+			&updated.Tag.TagColor,
+		)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
 	}
 
 	if err := tx.Commit(c.Context()); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "failed to commit transaction",
+		})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -664,31 +705,45 @@ func UpdateSubscription(c *fiber.Ctx) error {
 	})
 }
 
-func DeleteSubscription(c *fiber.Ctx) error {
-	id := c.Params("id")
+func DeleteSubscriptionByUserID(c *fiber.Ctx) error {
 
-	subscriptionID, err := strconv.ParseInt(id, 10, 64)
+	userID, ok := c.Locals("user_id").(int64)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized",
+		})
+	}
+
+	userEmail, ok := c.Locals("userEmail").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized",
+		})
+	}
+
+	subscriptionID, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid id",
 		})
 	}
 
-	userEmail := c.Locals("userEmail")
-	if userEmail == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "user email not found",
-		})
-	}
-
 	sqlStatement := `
-		UPDATE public.subscriptions
-		SET deleted_at = NOW(),
-		    deleted_by = $2
-		WHERE id = $1
-	`
+        UPDATE subscriptions
+        SET deleted_at = NOW(),
+            deleted_by = $1
+        WHERE id = $2
+          AND user_id = $3
+          AND deleted_at IS NULL
+    `
 
-	result, err := database.InitiateDataBase().Exec(c.Context(), sqlStatement, subscriptionID, userEmail.(string))
+	result, err := database.InitiateDataBase().Exec(
+		c.Context(),
+		sqlStatement,
+		userEmail,      
+		subscriptionID, 
+		userID,        
+	)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),

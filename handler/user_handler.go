@@ -35,11 +35,11 @@ func UserRegister(c *fiber.Ctx) error {
 		})
 	}
 
-	sqlstatement := `INSERT INTO public.users (first_name,last_name,email,password,is_admin,created_at,updated_at)
+	sqlstatement := `INSERT INTO public.users (first_name,last_name,email,password,role,created_at,updated_at)
 	VALUES($1,$2,$3,$4,$5,NOW(),NOW())
-	RETURNING id,first_name, last_name, email, is_admin, created_at, updated_at`
+	RETURNING id,first_name, last_name, email, role, created_at, updated_at`
 
-	isAdmin := false
+	role := "user"
 	var inserted data.UserResponse
 	err := database.InitiateDataBase().QueryRow(
 		c.Context(),
@@ -48,13 +48,13 @@ func UserRegister(c *fiber.Ctx) error {
 		req_user.LastName,
 		req_user.Email,
 		utils.GeneratePassword(req_user.Password),
-		isAdmin,
+		role,
 	).Scan(
 		&inserted.ID,
 		&inserted.FirstName,
 		&inserted.LastName,
 		&inserted.Email,
-		&inserted.IsAdmin,
+		&inserted.Role,
 		&inserted.Created_at,
 		&inserted.Updated_at,
 	)
@@ -87,7 +87,7 @@ func UserLogin(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("Validation error: %s", err))
 	}
 
-	sqlStatement := `SELECT id, first_name, last_name, email, password, is_admin, created_at, updated_at 
+	sqlStatement := `SELECT id, first_name, last_name, email, password, role, created_at, updated_at 
 	                 FROM public.users WHERE email = $1 AND deleted_at IS NULL`
 
 	user := data.UserResponse{}
@@ -103,7 +103,7 @@ func UserLogin(c *fiber.Ctx) error {
 		&user.LastName,
 		&user.Email,
 		&hashedPassword,
-		&user.IsAdmin,
+		&user.Role,
 		&user.Created_at,
 		&user.Updated_at,
 	)
@@ -119,8 +119,8 @@ func UserLogin(c *fiber.Ctx) error {
 		})
 	}
 
-	role := "notAdmin"
-	if user.IsAdmin {
+	role := "user"
+	if user.Role == "admin" {
 		role = "admin"
 	}
 
@@ -205,6 +205,7 @@ func GetMyAuthInfo(c *fiber.Ctx) error {
 			first_name,
 			last_name,
 			email,
+			role,
 			created_at
 		FROM users
 		WHERE id = $1 AND deleted_at IS NULL
@@ -219,6 +220,7 @@ func GetMyAuthInfo(c *fiber.Ctx) error {
 			&u.FirstName,
 			&u.LastName,
 			&u.Email,
+			&u.Role,
 			&u.Created_at,
 		)
 
@@ -248,6 +250,63 @@ func UserLogout(c *fiber.Ctx) error {
 
 }
 
+func UpdateMyAccount(c *fiber.Ctx) error {
+	var updateReq data.UpdateUserRequest
+	if err := c.BodyParser(&updateReq); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid request body",
+		})
+	}
+
+	userID, ok := c.Locals("user_id").(int64)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized",
+		})
+	}
+
+	sqlStatement := `
+        UPDATE users
+        SET first_name = COALESCE(NULLIF($1, ''), first_name),
+            last_name  = COALESCE(NULLIF($2, ''), last_name),
+            email      = COALESCE(NULLIF($3, ''), email),
+            updated_at = NOW(),
+            updated_by = $4
+        WHERE id = $4
+          AND deleted_at IS NULL
+        RETURNING id, first_name, last_name, email, updated_at, role
+    `
+
+	row := database.InitiateDataBase().QueryRow(
+		c.Context(),
+		sqlStatement,
+		updateReq.FirstName,
+		updateReq.LastName,
+		updateReq.Email,
+		userID,
+	)
+
+	var updated data.UserResponse
+	err := row.Scan(
+		&updated.ID,
+		&updated.FirstName,
+		&updated.LastName,
+		&updated.Email,
+		&updated.Updated_at,
+		&updated.Role,
+	)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "account updated successfully",
+		"user":    updated,
+	})
+}
+
 func DeleteMyAccount(c *fiber.Ctx) error {
 
 	userID := c.Locals("user_id")
@@ -257,7 +316,7 @@ func DeleteMyAccount(c *fiber.Ctx) error {
 		})
 	}
 
-		sqlStatement := `
+	sqlStatement := `
 		UPDATE public.users
 		SET deleted_at = NOW(),
 			deleted_by = $1

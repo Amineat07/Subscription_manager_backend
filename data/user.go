@@ -7,7 +7,7 @@ type UserRegisterRequest struct {
 	LastName  string `json:"last_name" validate:"required"`
 	Email     string `json:"email" validate:"required"`
 	Password  string `json:"password" validate:"required"`
-	IsAdmin   bool   `json:"is_admin"`
+	Role      string `json:"role"`
 }
 
 type UserResponse struct {
@@ -15,8 +15,15 @@ type UserResponse struct {
 	FirstName  string    `json:"first_name"`
 	LastName   string    `json:"last_name"`
 	Email      string    `json:"email"`
-	IsAdmin    bool      `json:"is_admin"`
+	Role       string    `json:"role"`
 	Created_at time.Time `json:"created_at"`
+	Updated_at time.Time `json:"updated_at"`
+}
+
+type UpdateUserRequest struct {
+	FirstName  string    `json:"first_name"`
+	LastName   string    `json:"last_name"`
+	Email      string    `json:"email"`
 	Updated_at time.Time `json:"updated_at"`
 }
 
