@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"subscription_manager/database"
-	"subscription_manager/handler"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -29,7 +28,7 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	handler.SetupRouter(app, connection)
+	SetupRouter(app, connection)
 
 	app.Listen(":3000")
 

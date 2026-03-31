@@ -1,7 +1,10 @@
-package handler
+package main
 
 import (
 	"os"
+	publichandler "subscription_manager/public_handler"
+	sharedhandler "subscription_manager/shared_handler"
+	userhandler "subscription_manager/user_handler"
 	"subscription_manager/utils"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,25 +20,25 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 
 	public := app.Group("/api/v1")
 
-	public.Post("/register", UserRegister)
-	public.Post("/login", UserLogin)
+	public.Post("/register", publichandler.UserRegister)
+	public.Post("/login", publichandler.UserLogin)
 
 	user := app.Group("/api/v1")
 
 	user.Use(utils.JWTMiddleware(jwtSecret))
 	user.Use(utils.RequireRole("admin", "user"))
 
-	user.Post("/logout", UserLogout)
+	user.Post("/logout", sharedhandler.UserLogout)
 
-	user.Get("/me", GetMyAuthInfo)
-	user.Patch("/me", UpdateMyAccount)
-	user.Delete("/me", DeleteMyAccount)
+	user.Get("/me", sharedhandler.GetMyAuthInfo)
+	user.Patch("/me", sharedhandler.UpdateMyAccount)
+	user.Delete("/me", sharedhandler.DeleteMyAccount)
 
-	user.Post("/subscriptions", AddSubscription)
-	user.Get("/subscriptions", GetSubscriptionsByUserID)
-	user.Get("/subscriptions/:id", GetSubscriptionByUserID)
-	user.Patch("/subscriptions/:id", UpdateSubscriptionByUserID)
-	user.Delete("/subscriptions/:id", DeleteSubscriptionByUserID)
+	user.Post("/subscriptions", userhandler.AddSubscription)
+	user.Get("/subscriptions", userhandler.GetSubscriptionsByUserID)
+	user.Get("/subscriptions/:id", userhandler.GetSubscriptionByUserID)
+	user.Patch("/subscriptions/:id", userhandler.UpdateSubscriptionByUserID)
+	user.Delete("/subscriptions/:id", userhandler.DeleteSubscriptionByUserID)
 
 	// user.Get("/newsfeed", GetNewsFeed)
 	// user.Get("/newsfeed/:id", GetNewsFeedItem)
