@@ -1,7 +1,8 @@
-package main
+package router
 
 import (
 	"os"
+	adminhandler "subscription_manager/admin_handler"
 	publichandler "subscription_manager/public_handler"
 	sharedhandler "subscription_manager/shared_handler"
 	userhandler "subscription_manager/user_handler"
@@ -54,7 +55,7 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	admin.Use(utils.JWTMiddleware(jwtSecret))
 	admin.Use(utils.RequireRole("admin"))
 
-	// admin.Get("/users", AdminListUsers)
+	admin.Get("/users", adminhandler.AdminListUsers)
 	// admin.Get("/users/:id", AdminGetUser)
 	// admin.Patch("/users/:id", AdminUpdateUser)
 	// admin.Delete("/users/:id", AdminDeleteUser)
