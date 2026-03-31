@@ -1,11 +1,14 @@
 package main
 
 import (
+	"log"
+	"os"
 	"subscription_manager/database"
 	"subscription_manager/handler"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -15,8 +18,13 @@ func main() {
 
 	app := fiber.New()
 
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:5173",
+		AllowOrigins:     os.Getenv("FRONTEND_BASE_URL"),
 		AllowHeaders:     "Origin, Content-Type, Accept",
 		AllowCredentials: true,
 	}))
