@@ -1,6 +1,7 @@
 package adminhandler
 
 import (
+	"strconv"
 	"subscription_manager/data"
 	"subscription_manager/database"
 
@@ -50,4 +51,53 @@ func AdminListUsers(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"users": users,
 	})
+}
+
+func AdminGetUser(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	user_id, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid id",
+		})
+	}
+
+	sqlstatement := `
+        SELECT
+            id,
+            first_name,
+            last_name,
+            email,
+            role,
+            created_at,
+            updated_at
+        FROM users
+        WHERE id = $1 AND deleted_at IS NULL
+    `
+
+	var u data.UserResponse
+	err = database.InitiateDataBase().QueryRow(c.Context(), sqlstatement, user_id).Scan(
+		&u.ID,
+		&u.FirstName,
+		&u.LastName,
+		&u.Email,
+		&u.Role,
+		&u.Created_at,
+		&u.Updated_at,
+	)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "user not found",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(u)
+
 }

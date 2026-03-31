@@ -56,7 +56,7 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	admin.Use(utils.RequireRole("admin"))
 
 	admin.Get("/users", adminhandler.AdminListUsers)
-	// admin.Get("/users/:id", AdminGetUser)
+	admin.Get("/users/:id", adminhandler.AdminGetUser)
 	// admin.Patch("/users/:id", AdminUpdateUser)
 	// admin.Delete("/users/:id", AdminDeleteUser)
 	// admin.Post("/users/:id/ban", AdminBanUser)
