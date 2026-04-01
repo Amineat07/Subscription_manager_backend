@@ -62,13 +62,13 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	// admin.Post("/users/:id/ban", AdminBanUser)
 	// admin.Post("/users/:id/unban", AdminUnbanUser)
 
-	// admin.Get("/subscriptions", AdminGetSubscriptions)
+	// admin.Get("/subscriptions", AdminGetAllSubscriptions)
+	// admin.Get("/subscriptions/:id", AdminGetAllSubscriptionByUserId)
 	// admin.Get("/subscriptions/:id", AdminGetSubscription)
-	// admin.Post("/subscriptions", AdminCreateSubscription)
-	// admin.Patch("/subscriptions/:id", AdminUpdateSubscription)
-	// admin.Delete("/subscriptions/:id", AdminDeleteSubscription)
-	// admin.Post("/subscriptions/:id/cancel", AdminCancelSubscription)
-	// admin.Post("/subscriptions/:id/renew", AdminRenewSubscription)
+	// admin.Get("/subscriptions/:id", AdminGetSubscriptionByUserId)
+	// admin.Post("/subscriptions", AdminCreateSubscriptionByUserId)
+	// admin.Patch("/subscriptions/:id", AdminUpdateSubscriptionByUserId)
+	// admin.Delete("/subscriptions/:id", AdminDeleteSubscriptionByUserId)
 
 	// admin.Get("/requests", AdminListUsersRequests)
 	// admin.Get("/requests/:id", AdminGetUserRequest)
@@ -85,5 +85,10 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	// admin.Patch("/tickets/:id", AdminUpdateTicket)
 	// admin.Post("/tickets/:id/reply", AdminReplyTicket)
 	// admin.Post("/tickets/:id/close", AdminCloseTicket)
+
+	//API Publishing
+	// publish := app.Group("/publish/api/v1")
+	// publish.Get("/subscriptions", GetSubscriptions) //should have query params like company id and ApiKey
+	// publish.Get("/subscriptions/:id", GetUserSubscriptions)
 
 }
