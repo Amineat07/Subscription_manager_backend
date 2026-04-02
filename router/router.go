@@ -44,7 +44,7 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	// user.Get("/newsfeed", GetNewsFeed)
 	// user.Get("/newsfeed/:id", GetNewsFeedItem)
 
-	// user.Post("/tickets", CreateTicket)
+	user.Post("/tickets", userhandler.CreateTicket)
 	// user.Get("/tickets", GetMyTickets)
 	// user.Get("/tickets/:id", GetTicket)
 	// user.Post("/tickets/:id/reply", ReplyToTicket)
