@@ -58,8 +58,8 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 
 	admin.Get("/users", adminhandler.AdminListUsers)
 	admin.Get("/users/:id", adminhandler.AdminGetUser)
-	// admin.Patch("/users/:id", AdminUpdateUser)
-	// admin.Delete("/users/:id", AdminDeleteUser)
+	admin.Patch("/users/:id", adminhandler.AdminUpdateUserById)
+	admin.Delete("/users/:id", adminhandler.AdminDeleteUser)
 	// admin.Post("/users/:id/ban", AdminBanUser)
 	// admin.Post("/users/:id/unban", AdminUnbanUser)
 

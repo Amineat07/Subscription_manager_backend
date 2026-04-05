@@ -31,3 +31,22 @@ type UserLogin struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+type AdminUpdateUserRequest struct {
+	FirstName  string    `json:"first_name"`
+	LastName   string    `json:"last_name"`
+	Email      string    `json:"email"`
+	Role       string    `json:"role"`
+	Updatedby  string    `json:"updated_by"`
+	Updated_at time.Time `json:"updated_at"`
+}
+
+type AdminUpdateUserResponse struct {
+	ID         int64     `json:"user_ID"`
+	FirstName  string    `json:"first_name"`
+	LastName   string    `json:"last_name"`
+	Email      string    `json:"email"`
+	Role       string    `json:"role"`
+	Updatedby  string    `json:"updated_by"`
+	Updated_at time.Time `json:"updated_at"`
+}
