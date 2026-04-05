@@ -83,7 +83,6 @@ func CreateTicket(c *fiber.Ctx) error {
 }
 
 func GetMyTickets(c *fiber.Ctx) error {
-
 	userID := c.Locals("user_id")
 	if userID == nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -91,24 +90,20 @@ func GetMyTickets(c *fiber.Ctx) error {
 		})
 	}
 
-	sqlStatement := `SELECT id,user_id, title, description, COALESCE(link,''), priority, created_by, created_at, updated_by, updated_at
-	FROM tickets 
-	WHERE user_id = $1
-	AND deleted_at IS NULL`
-
-	rows, err := database.InitiateDataBase().Query(c.Context(), sqlStatement, userID)
+	rows, err := database.InitiateDataBase().Query(c.Context(), `
+        SELECT id, user_id, title, description, COALESCE(link,''), priority, created_by, created_at, updated_by, updated_at
+        FROM tickets 
+        WHERE user_id = $1 AND deleted_at IS NULL
+    `, userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
-	defer rows.Close()
 
 	tickets := []data.TicketResponse{}
-
 	for rows.Next() {
 		var t data.TicketResponse
-
 		err := rows.Scan(
 			&t.ID,
 			&t.UserID,
@@ -126,9 +121,48 @@ func GetMyTickets(c *fiber.Ctx) error {
 				"error": err.Error(),
 			})
 		}
-
 		tickets = append(tickets, t)
 	}
+	rows.Close()
+
+	for i, t := range tickets {
+		replyRows, err := database.InitiateDataBase().Query(c.Context(), `
+            SELECT r.id, r.ticket_id, r.user_id, r.message, r.created_at, r.created_by, u.role
+            FROM ticket_replies r
+            JOIN users u ON r.user_id = u.id
+            WHERE r.ticket_id = $1
+            ORDER BY r.created_at ASC
+        `, t.ID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+
+		replies := []data.TicketReplyResponse{}
+		for replyRows.Next() {
+			var r data.TicketReplyResponse
+			err := replyRows.Scan(
+				&r.ID,
+				&r.TicketID,
+				&r.UserID,
+				&r.Message,
+				&r.CreatedAt,
+				&r.CreatedBy,
+				&r.Role,
+			)
+			if err != nil {
+				replyRows.Close()
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+			replies = append(replies, r)
+		}
+		replyRows.Close()
+		tickets[i].Replies = replies
+	}
+
 	return c.Status(fiber.StatusOK).JSON(tickets)
 }
 
@@ -141,7 +175,6 @@ func GetTicket(c *fiber.Ctx) error {
 	}
 
 	id := c.Params("id")
-
 	ticketID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -155,7 +188,6 @@ func GetTicket(c *fiber.Ctx) error {
 	AND deleted_at IS NULL`
 
 	var t data.TicketResponse
-
 	err = database.InitiateDataBase().QueryRow(c.Context(), sqlStatement, ticketID, userID).Scan(
 		&t.ID,
 		&t.UserID,
@@ -173,6 +205,43 @@ func GetTicket(c *fiber.Ctx) error {
 			"error": "ticket not found",
 		})
 	}
+
+	replyRows, err := database.InitiateDataBase().Query(c.Context(), `
+        SELECT r.id, r.ticket_id, r.user_id, r.message, r.created_at, r.created_by, u.role
+        FROM ticket_replies r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.ticket_id = $1
+        ORDER BY r.created_at ASC
+    `, t.ID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	defer replyRows.Close()
+
+	replies := []data.TicketReplyResponse{}
+	for replyRows.Next() {
+		var r data.TicketReplyResponse
+		err := replyRows.Scan(
+			&r.ID,
+			&r.TicketID,
+			&r.UserID,
+			&r.Message,
+			&r.CreatedAt,
+			&r.CreatedBy,
+			&r.Role,
+		)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+		replies = append(replies, r)
+	}
+
+	t.Replies = replies
+
 	return c.Status(fiber.StatusOK).JSON(t)
 }
 
@@ -309,4 +378,80 @@ func DeleteTicket(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "ticket deleted successfully",
 	})
+}
+
+func ReplyToTicket(c *fiber.Ctx) error {
+	var req_ticket_reply data.TicketReplyRequest
+	if err := c.BodyParser(&req_ticket_reply); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "invalid request body",
+		})
+	}
+	if err := utils.Validate(req_ticket_reply); err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("Validation error: %s", err))
+	}
+
+	userID, ok := c.Locals("user_id").(int64)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized",
+		})
+	}
+
+	userEmail, ok := c.Locals("userEmail").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized",
+		})
+	}
+
+	ticketID, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid id",
+		})
+	}
+
+	sqlStatement := `
+		WITH inserted AS (
+			INSERT INTO ticket_replies (ticket_id, user_id, message, created_by)
+			VALUES ($1, $2, $3, $4)
+			RETURNING id, ticket_id, user_id, message, created_at, created_by
+		)
+		SELECT 
+			i.id,
+			i.ticket_id,
+			i.user_id,
+			i.message,
+			i.created_at,
+			i.created_by,
+			u.role
+		FROM inserted i
+		JOIN users u ON i.user_id = u.id
+	`
+
+	var inserted data.TicketReplyResponse
+	err = database.InitiateDataBase().QueryRow(
+		c.Context(),
+		sqlStatement,
+		ticketID,
+		userID,
+		req_ticket_reply.Message,
+		userEmail,
+	).Scan(
+		&inserted.ID,
+		&inserted.TicketID,
+		&inserted.UserID,
+		&inserted.Message,
+		&inserted.CreatedAt,
+		&inserted.CreatedBy,
+		&inserted.Role,
+	)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(inserted)
 }
