@@ -92,11 +92,13 @@ func GetMyTickets(c *fiber.Ctx) error {
 		})
 	}
 
-	rows, err := database.InitiateDataBase().Query(c.Context(), `
+	sqlStatement := `
         SELECT id, user_id, title, description, COALESCE(link,''), priority, status, created_by, created_at, updated_by, updated_at
         FROM tickets 
         WHERE user_id = $1 AND deleted_at IS NULL
-    `, userID)
+    `
+
+	rows, err := database.InitiateDataBase().Query(c.Context(), sqlStatement, userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
