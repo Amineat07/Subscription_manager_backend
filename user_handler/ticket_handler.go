@@ -45,7 +45,7 @@ func CreateTicket(c *fiber.Ctx) error {
 	sqlstatement := `
     INSERT INTO tickets (title, description, link, priority, user_id, created_by, updated_by)
     VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING id, title, description, COALESCE(link, ''), priority, status, created_by, created_at, updated_by, updated_at
+    RETURNING id,user_id, title, description, COALESCE(link, ''), priority, status, created_by, created_at, updated_by, updated_at
 
 `
 
@@ -62,6 +62,7 @@ func CreateTicket(c *fiber.Ctx) error {
 		userEmail,
 	).Scan(
 		&inserted.ID,
+		&inserted.UserID,
 		&inserted.Title,
 		&inserted.Description,
 		&inserted.Link,
@@ -382,80 +383,4 @@ func DeleteTicket(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "ticket deleted successfully",
 	})
-}
-
-func ReplyToTicket(c *fiber.Ctx) error {
-	var req_ticket_reply data.TicketReplyRequest
-	if err := c.BodyParser(&req_ticket_reply); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "invalid request body",
-		})
-	}
-	if err := utils.Validate(req_ticket_reply); err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("Validation error: %s", err))
-	}
-
-	userID, ok := c.Locals("user_id").(int64)
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "unauthorized",
-		})
-	}
-
-	userEmail, ok := c.Locals("userEmail").(string)
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "unauthorized",
-		})
-	}
-
-	ticketID, err := strconv.ParseInt(c.Params("id"), 10, 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid id",
-		})
-	}
-
-	sqlStatement := `
-		WITH inserted AS (
-			INSERT INTO ticket_replies (ticket_id, user_id, message, created_by)
-			VALUES ($1, $2, $3, $4)
-			RETURNING id, ticket_id, user_id, message, created_at, created_by
-		)
-		SELECT 
-			i.id,
-			i.ticket_id,
-			i.user_id,
-			i.message,
-			i.created_at,
-			i.created_by,
-			u.role
-		FROM inserted i
-		JOIN users u ON i.user_id = u.id
-	`
-
-	var inserted data.TicketReplyResponse
-	err = database.InitiateDataBase().QueryRow(
-		c.Context(),
-		sqlStatement,
-		ticketID,
-		userID,
-		req_ticket_reply.Message,
-		userEmail,
-	).Scan(
-		&inserted.ID,
-		&inserted.TicketID,
-		&inserted.UserID,
-		&inserted.Message,
-		&inserted.CreatedAt,
-		&inserted.CreatedBy,
-		&inserted.Role,
-	)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(inserted)
 }
