@@ -50,7 +50,6 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	user.Patch("/tickets/:id", userhandler.UpdateTicket)
 	user.Delete("/tickets/:id",userhandler.DeleteTicket)
 	user.Post("/tickets/:id/reply", userhandler.ReplyToTicket)
-	// user.Post("/tickets/:id/close", CloseTicket)
 
 	admin := app.Group("/admin/api/v1")
 
@@ -86,7 +85,7 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	// admin.Get("/tickets/:id", AdminGetTicket)
 	// admin.Patch("/tickets/:id", AdminUpdateTicket)
 	// admin.Post("/tickets/:id/reply", AdminReplyTicket)
-	// admin.Post("/tickets/:id/close", AdminCloseTicket)
+	   admin.Put("/tickets/:id/status", adminhandler.UpdateTicketStatus)
 
 	//API Publishing
 	// publish := app.Group("/publish/api/v1")

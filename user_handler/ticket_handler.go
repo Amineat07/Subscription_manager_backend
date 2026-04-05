@@ -45,7 +45,7 @@ func CreateTicket(c *fiber.Ctx) error {
 	sqlstatement := `
     INSERT INTO tickets (title, description, link, priority, user_id, created_by, updated_by)
     VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING id, title, description, COALESCE(link, ''), priority, created_by, created_at, updated_by, updated_at
+    RETURNING id, title, description, COALESCE(link, ''), priority, status, created_by, created_at, updated_by, updated_at
 
 `
 
@@ -66,6 +66,7 @@ func CreateTicket(c *fiber.Ctx) error {
 		&inserted.Description,
 		&inserted.Link,
 		&inserted.Priority,
+		&inserted.Status,
 		&inserted.CreatedBy,
 		&inserted.CreatedAt,
 		&inserted.UpdatedBy,
@@ -91,7 +92,7 @@ func GetMyTickets(c *fiber.Ctx) error {
 	}
 
 	rows, err := database.InitiateDataBase().Query(c.Context(), `
-        SELECT id, user_id, title, description, COALESCE(link,''), priority, created_by, created_at, updated_by, updated_at
+        SELECT id, user_id, title, description, COALESCE(link,''), priority, status, created_by, created_at, updated_by, updated_at
         FROM tickets 
         WHERE user_id = $1 AND deleted_at IS NULL
     `, userID)
@@ -111,6 +112,7 @@ func GetMyTickets(c *fiber.Ctx) error {
 			&t.Description,
 			&t.Link,
 			&t.Priority,
+			&t.Status,
 			&t.CreatedBy,
 			&t.CreatedAt,
 			&t.UpdatedBy,
@@ -182,7 +184,7 @@ func GetTicket(c *fiber.Ctx) error {
 		})
 	}
 
-	sqlStatement := `SELECT id,user_id, title, description, COALESCE(link,''), priority, created_by, created_at, updated_by, updated_at
+	sqlStatement := `SELECT id,user_id, title, description, COALESCE(link,''), priority, status, created_by, created_at, updated_by, updated_at
 	FROM tickets 
 	WHERE id = $1 AND user_id = $2
 	AND deleted_at IS NULL`
@@ -195,6 +197,7 @@ func GetTicket(c *fiber.Ctx) error {
 		&t.Description,
 		&t.Link,
 		&t.Priority,
+		&t.Status,
 		&t.CreatedBy,
 		&t.CreatedAt,
 		&t.UpdatedBy,
@@ -285,7 +288,7 @@ func UpdateTicket(c *fiber.Ctx) error {
 		updated_at = NOW(),
 		updated_by = $5
 		WHERE id = $6 AND user_id = $7 AND deleted_at IS NULL
-		RETURNING id,user_id,title,description,link,priority,updated_at,updated_by,created_at,created_by
+		RETURNING id,user_id,title,description,link,priority,status,created_at,created_by,updated_at,updated_by
 	`
 
 	row := database.InitiateDataBase().QueryRow(
@@ -308,10 +311,11 @@ func UpdateTicket(c *fiber.Ctx) error {
 		&updated.Description,
 		&updated.Link,
 		&updated.Priority,
-		&updated.UpdatedAt,
-		&updated.UpdatedBy,
+		&updated.Status,
 		&updated.CreatedAt,
 		&updated.CreatedBy,
+		&updated.UpdatedAt,
+		&updated.UpdatedBy,
 	)
 
 	if err != nil {

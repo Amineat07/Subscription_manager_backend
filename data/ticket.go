@@ -31,6 +31,7 @@ type TicketResponse struct {
 	Description string                `json:"description" validate:"required"`
 	Link        string                `json:"link"`
 	Priority    string                `json:"priority" validate:"required"`
+	Status      string                `json:"status"`
 	CreatedBy   string                `json:"created_by"`
 	CreatedAt   time.Time             `json:"created_at"`
 	UpdatedBy   string                `json:"updated_by"`
@@ -48,4 +49,8 @@ type TicketReplyResponse struct {
 	CreatedBy string    `json:"created_by"`
 	Role      string    `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type TicketStatusRequest struct {
+	Status string `json:"status" validate:"required"`
 }
