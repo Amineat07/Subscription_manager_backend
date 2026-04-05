@@ -60,10 +60,8 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	admin.Get("/users/:id", adminhandler.AdminGetUser)
 	admin.Patch("/users/:id", adminhandler.AdminUpdateUserById)
 	admin.Delete("/users/:id", adminhandler.AdminDeleteUser)
-	// admin.Post("/users/:id/ban", AdminBanUser)
-	// admin.Post("/users/:id/unban", AdminUnbanUser)
 
-	// admin.Get("/subscriptions", AdminGetAllSubscriptions)
+	//admin.Get("/subscriptions", adminhandler.AdminGetAllSubscriptions)
 	// admin.Get("/subscriptions/:id", AdminGetAllSubscriptionByUserId)
 	// admin.Get("/subscriptions/:id", AdminGetSubscription)
 	// admin.Get("/subscriptions/:id", AdminGetSubscriptionByUserId)
@@ -71,9 +69,6 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	// admin.Patch("/subscriptions/:id", AdminUpdateSubscriptionByUserId)
 	// admin.Delete("/subscriptions/:id", AdminDeleteSubscriptionByUserId)
 
-	// admin.Get("/requests", AdminListUsersRequests)
-	// admin.Get("/requests/:id", AdminGetUserRequest)
-	// admin.Post("/requests/:id/answer", AdminAnswerUserRequest)
 
 	// admin.Post("/newsfeed", AdminCreateNewsFeed)
 	// admin.Get("/newsfeed", AdminListNewsFeed)
