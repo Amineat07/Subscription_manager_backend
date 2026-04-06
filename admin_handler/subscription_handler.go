@@ -38,10 +38,13 @@ func AdminGetAllSubscriptions(c *fiber.Ctx) error {
 			COALESCE(c.link, ''),
 			t.id,
 			COALESCE(t.tag_name, ''),
-			COALESCE(t.color, '')
+			COALESCE(t.color, ''),
+			u.id,
+			u.email
 		FROM subscriptions s
 		JOIN companies c ON s.company_id = c.id
 		JOIN tags t ON s.tag_id = t.id
+		JOIN users u ON s.user_id = u.id
 		WHERE s.deleted_at IS NULL
 	`
 
@@ -53,10 +56,10 @@ func AdminGetAllSubscriptions(c *fiber.Ctx) error {
 	}
 	defer rows.Close()
 
-	subs := []data.SubscriptionResponse{}
+	subs := []data.AdminSubscriptionResponse{}
 
 	for rows.Next() {
-		var s data.SubscriptionResponse
+		var s data.AdminSubscriptionResponse
 
 		err := rows.Scan(
 			&s.ID,
@@ -87,6 +90,8 @@ func AdminGetAllSubscriptions(c *fiber.Ctx) error {
 			&s.Tag.ID,
 			&s.Tag.TagName,
 			&s.Tag.TagColor,
+			&s.UserID,
+			&s.UserEmail,
 		)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -155,10 +160,13 @@ func AdminGetAllSubscriptionByUserId(c *fiber.Ctx) error {
 			COALESCE(c.link, ''),
 			t.id,
 			COALESCE(t.tag_name, ''),
-			COALESCE(t.color, '')
+			COALESCE(t.color, ''),
+			u.id,
+			u.email
 		FROM subscriptions s
 		JOIN companies c ON s.company_id = c.id
 		JOIN tags t ON s.tag_id = t.id
+		JOIN users u ON s.user_id = u.id
 		WHERE s.user_id = $1
 		AND s.deleted_at IS NULL
 	`
@@ -171,10 +179,10 @@ func AdminGetAllSubscriptionByUserId(c *fiber.Ctx) error {
 	}
 	defer rows.Close()
 
-	subs := []data.SubscriptionResponse{}
+	subs := []data.AdminSubscriptionResponse{}
 
 	for rows.Next() {
-		var s data.SubscriptionResponse
+		var s data.AdminSubscriptionResponse
 
 		err := rows.Scan(
 			&s.ID,
@@ -205,6 +213,8 @@ func AdminGetAllSubscriptionByUserId(c *fiber.Ctx) error {
 			&s.Tag.ID,
 			&s.Tag.TagName,
 			&s.Tag.TagColor,
+			&s.UserID,
+			&s.UserEmail,
 		)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -258,15 +268,18 @@ func AdminGetSubscription(c *fiber.Ctx) error {
 			c.link,
 			t.id,
 			t.tag_name,
-			t.color
+			t.color,
+			u.id,
+			u.email
 		FROM subscriptions s
 		JOIN companies c ON s.company_id = c.id
 		JOIN tags t ON s.tag_id = t.id
+		JOIN users u ON s.user_id = u.id
 		WHERE s.id = $1
           AND s.deleted_at IS NULL
 	`
 
-	var s data.SubscriptionResponse
+	var s data.AdminSubscriptionResponse
 
 	err = database.InitiateDataBase().QueryRow(c.Context(), sqlStatement, subscriptionID).Scan(
 		&s.ID,
@@ -297,6 +310,8 @@ func AdminGetSubscription(c *fiber.Ctx) error {
 		&s.Tag.ID,
 		&s.Tag.TagName,
 		&s.Tag.TagColor,
+		&s.UserID,
+		&s.UserEmail,
 	)
 
 	if err != nil {
@@ -371,16 +386,19 @@ func AdminGetSubscriptionByUserId(c *fiber.Ctx) error {
 			c.link,
 			t.id,
 			t.tag_name,
-			t.color
+			t.color,
+			u.id,
+			u.email
 		FROM subscriptions s
 		JOIN companies c ON s.company_id = c.id
 		JOIN tags t ON s.tag_id = t.id
+		JOIN users u ON s.user_id = u.id
 		WHERE s.id = $1
 		AND s.user_id = $2
 		AND s.deleted_at IS NULL
 	`
 
-	var s data.SubscriptionResponse
+	var s data.AdminSubscriptionResponse
 
 	err = database.InitiateDataBase().QueryRow(c.Context(), sqlStatement, subscriptionID, userID).Scan(
 		&s.ID,
@@ -411,6 +429,8 @@ func AdminGetSubscriptionByUserId(c *fiber.Ctx) error {
 		&s.Tag.ID,
 		&s.Tag.TagName,
 		&s.Tag.TagColor,
+		&s.UserID,
+		&s.UserEmail,
 	)
 
 	if err != nil {

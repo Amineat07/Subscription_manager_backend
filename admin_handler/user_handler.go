@@ -207,7 +207,7 @@ func AdminDeleteUser(c *fiber.Ctx) error {
 
 	if result.RowsAffected() == 0 {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "subscription not found",
+			"error": "user not found",
 		})
 	}
 

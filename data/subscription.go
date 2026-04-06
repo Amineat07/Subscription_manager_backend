@@ -56,6 +56,32 @@ type SubscriptionResponse struct {
 	Price              float64         `json:"price"`
 }
 
+type AdminSubscriptionResponse struct {
+	ID                 int64           `json:"id"`
+	UserID             int64           `json:"user_id"`
+	ContractStartDate  *time.Time      `json:"contract_start_date"`
+	ContractEndDate    *time.Time      `json:"contract_end_date"`
+	CreatedAt          time.Time       `json:"created_at"`
+	UpdatedAt          *time.Time      `json:"updated_at"`
+	DeletedAt          *time.Time      `json:"deleted_at"`
+	Company            CompanyResponse `json:"company"`
+	Tag                TagResponse     `json:"tag"`
+	UserEmail          string          `json:"user_email"`
+	SubscriptionName   string          `json:"subscription_name"`
+	Typ                string          `json:"typ"`
+	ContractNumber     string          `json:"contract_number"`
+	CustomerNumber     string          `json:"customer_number"`
+	PaymentMethod      string          `json:"payment_method"`
+	BillingPeriod      string          `json:"billing_period"`
+	Note               string          `json:"note"`
+	CreatedBy          *string         `json:"created_by"`
+	UpdatedBy          *string         `json:"updated_by"`
+	DeletedBy          *string         `json:"deleted_by"`
+	CancellationPeriod *int64          `json:"cancellation_period"`
+	BillingDate        int64           `json:"billing_date"`
+	Price              float64         `json:"price"`
+}
+
 type CompanyResponse struct {
 	ID            int64  `json:"id"`
 	CompanyName   string `json:"company_name"`
