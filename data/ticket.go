@@ -45,7 +45,7 @@ type TicketReplyResponse struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`
 	TicketID  int64     `json:"ticket_id"`
-	Message   string    `json:"title"`
+	Message   string    `json:"message"`
 	CreatedBy string    `json:"created_by"`
 	Role      string    `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
