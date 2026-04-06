@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"subscription_manager/cron"
@@ -26,8 +27,13 @@ func main() {
 
 	app := fiber.New()
 
+	origins := fmt.Sprintf("%s,%s",
+		os.Getenv("ADMIN_FRONTEND_BASE_URL"),
+		os.Getenv("USER_FRONTEND_BASE_URL"),
+	)
+
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     os.Getenv("FRONTEND_BASE_URL"),
+		AllowOrigins:     origins,
 		AllowHeaders:     "Origin, Content-Type, Accept",
 		AllowCredentials: true,
 	}))

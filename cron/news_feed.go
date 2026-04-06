@@ -20,9 +20,10 @@ func PublishScheduledNews() {
 	`
 
 	_, err := database.InitiateDataBase().Exec(context.Background(), sqlStatement)
+
 	if err != nil {
 		log.Println("cronjob error:", err)
 	} else {
-		log.Println("cronjob ran: scheduled news published")
+		log.Println("cronjob ran: scheduled news feed published")
 	}
 }

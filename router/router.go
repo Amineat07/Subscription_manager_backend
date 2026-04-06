@@ -81,7 +81,7 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 
 	//API Publishing
 	// publish := app.Group("/publish/api/v1")
-	// publish.Get("/subscriptions", GetSubscriptions) //should have query params like company id and ApiKey
+	// publish.Get("/subscriptions", GetSubscriptions) //should have params like company id and ApiKey
 	// publish.Get("/subscriptions/:id", GetUserSubscriptions)
 
 }

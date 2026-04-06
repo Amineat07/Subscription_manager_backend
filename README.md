@@ -18,4 +18,6 @@ Create a .env file in the root directory of the project and add the required dat
 
 DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, JWT_SECRET
 
+ADMIN_FRONTEND_BASE_URL, USER_FRONTEND_BASE_URL
+
 
