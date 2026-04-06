@@ -153,3 +153,123 @@ func AdminGetNewsFeed(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(nf)
 
 }
+
+func AdminUpdateNewsFeed(c *fiber.Ctx) error {
+
+	var updateNewsFeed data.UpdateNewsFeedRequest
+	if err := c.BodyParser(&updateNewsFeed); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid request body",
+		})
+	}
+
+	id := c.Params("id")
+
+	newsFeedID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid id",
+		})
+	}
+
+	userEmail := c.Locals("userEmail")
+	if userEmail == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "user email not found",
+		})
+	}
+
+	sqlStatement := `UPDATE news_feed
+	SET title = COALESCE(NULLIF($1, ''), title),
+		content = COALESCE(NULLIF($2, ''), content),
+		image_url = COALESCE(NULLIF($3, ''), image_url),
+		is_published = COALESCE($4, is_published),
+		scheduled_at = COALESCE($5, scheduled_at),
+		updated_at = NOW(),
+		updated_by = $6
+		WHERE id = $7 AND deleted_at IS NULL
+		RETURNING id,title,content,image_url,is_published,scheduled_at,created_at,created_by,updated_at,updated_by
+	`
+	row := database.InitiateDataBase().QueryRow(
+		c.Context(),
+		sqlStatement,
+		updateNewsFeed.Title,
+		updateNewsFeed.Content,
+		updateNewsFeed.ImageUrl,
+		updateNewsFeed.IsPublished,
+		updateNewsFeed.ScheduledAt,
+		userEmail,
+		newsFeedID,
+	)
+
+	var updated data.NewsFeedResponse
+	err = row.Scan(
+		&updated.ID,
+		&updated.Title,
+		&updated.Content,
+		&updated.ImageUrl,
+		&updated.IsPublished,
+		&updated.ScheduledAt,
+		&updated.CreatedAt,
+		&updated.CreatedBy,
+		&updated.UpdatedAt,
+		&updated.UpdatedBy,
+	)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "ticket updated successfully",
+		"ticket":  updated,
+	})
+}
+
+func AdminDeleteNewsFeed(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	newsFeedID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid id",
+		})
+	}
+
+	userEmail := c.Locals("userEmail")
+	if userEmail == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "user email not found",
+		})
+	}
+
+	sqlStatement := `
+        UPDATE news_feed
+        SET deleted_at = NOW(),
+            deleted_by = $1
+        WHERE id = $2
+          AND deleted_at IS NULL
+    `
+
+	result, err := database.InitiateDataBase().Exec(
+		c.Context(),
+		sqlStatement,
+		userEmail,
+		newsFeedID,
+	)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	if result.RowsAffected() == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "newsfeed not found",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "newsfeed deleted successfully",
+	})
+}

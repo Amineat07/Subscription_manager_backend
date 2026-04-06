@@ -25,3 +25,13 @@ type NewsFeedResponse struct {
 	DeletedBy   *string    `json:"deleted_by"`
 	DeletedAt   *time.Time `json:"deleted_at"`
 }
+
+type UpdateNewsFeedRequest struct {
+	Title       string     `json:"title"`
+	Content     string     `json:"content"`
+	ImageUrl    string     `json:"image_url"`
+	IsPublished bool       `json:"is_published"`
+	ScheduledAt time.Time  `json:"scheduled_at"`
+	UpdatedBy   string     `json:"updated_by"`
+	UpdatedAt   *time.Time `json:"updated_at"`
+}
