@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"subscription_manager/cron"
 	"subscription_manager/database"
 	"subscription_manager/router"
 
@@ -13,15 +14,17 @@ import (
 
 func main() {
 
-	connection := database.InitiateDataBase()
-	defer connection.Close()
-
-	app := fiber.New()
-
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	connection := database.InitiateDataBase()
+	defer connection.Close()
+
+	cron.StartCronJobs()
+
+	app := fiber.New()
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     os.Getenv("FRONTEND_BASE_URL"),

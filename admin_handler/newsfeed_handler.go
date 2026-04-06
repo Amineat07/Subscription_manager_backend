@@ -6,6 +6,7 @@ import (
 	"subscription_manager/data"
 	"subscription_manager/database"
 	"subscription_manager/utils"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -35,10 +36,21 @@ func AdminCreateNewsFeed(c *fiber.Ctx) error {
 	}
 
 	sqlstatement := `
-    INSERT INTO news_feed (title, content, image_url, is_published, scheduled_at, created_by, updated_by)
-	VALUES ($1, $2, $3, $4, $5, $6, $7)
-	RETURNING id, title, content, COALESCE(image_url, ''), is_published, scheduled_at, published_at, created_by, created_at, updated_by, updated_at
+    INSERT INTO news_feed (title, content, image_url, is_published, scheduled_at, published_at, created_by, updated_by)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id, title, content, COALESCE(image_url,''), is_published, scheduled_at, published_at, created_by, created_at, updated_by, updated_at
 	`
+	isPublished := false
+	var publishedAt *time.Time
+	var scheduledAt *time.Time
+
+	if req.ScheduledAt != nil {
+		scheduledAt = req.ScheduledAt
+	} else {
+		isPublished = true
+		now := time.Now()
+		publishedAt = &now
+	}
 
 	var inserted data.NewsFeedResponse
 
@@ -48,8 +60,9 @@ func AdminCreateNewsFeed(c *fiber.Ctx) error {
 		req.Title,
 		req.Content,
 		req.ImageUrl,
-		req.IsPublished,
-		req.ScheduledAt,
+		isPublished,
+		scheduledAt,
+		publishedAt,
 		userEmail,
 		userEmail,
 	).Scan(
@@ -73,8 +86,6 @@ func AdminCreateNewsFeed(c *fiber.Ctx) error {
 	}
 	return c.Status(fiber.StatusCreated).JSON(inserted)
 }
-
-
 
 func AdminUpdateNewsFeed(c *fiber.Ctx) error {
 

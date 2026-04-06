@@ -7,7 +7,7 @@ type NewsFeedRequest struct {
 	Content     string    `json:"content" validate:"required"`
 	ImageUrl    string    `json:"image_url"`
 	IsPublished bool      `json:"is_published"`
-	ScheduledAt time.Time `json:"scheduled_at"`
+	ScheduledAt *time.Time `json:"scheduled_at"`
 }
 
 type NewsFeedResponse struct {
