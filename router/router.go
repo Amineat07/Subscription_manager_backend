@@ -19,7 +19,7 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
-	public := app.Group("/api/v1")
+	public := app.Group("/api/v1/auth")
 
 	public.Post("/register", publichandler.UserRegister)
 	public.Post("/login", publichandler.UserLogin)
