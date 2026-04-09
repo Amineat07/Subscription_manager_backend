@@ -41,7 +41,7 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	user.Patch("/subscriptions/:id", userhandler.UpdateSubscriptionByUserID)
 	user.Delete("/subscriptions/:id", userhandler.DeleteSubscriptionByUserID)
 
-	user.Get("/newsfeed", sharedhandler.GetNewsFeed)
+	user.Get("/newsfeed", sharedhandler.GetAllNewsFeed)
 	user.Get("/newsfeed/:id", sharedhandler.GetNewsFeed)
 
 	user.Post("/tickets", userhandler.CreateTicket)

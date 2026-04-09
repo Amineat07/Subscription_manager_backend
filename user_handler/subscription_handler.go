@@ -13,8 +13,6 @@ import (
 func AddSubscription(c *fiber.Ctx) error {
 	var req data.SubscriptionRequest
 
-	body := c.Body()
-	fmt.Println(string(body))
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "invalid request body",
@@ -131,6 +129,7 @@ func AddSubscription(c *fiber.Ctx) error {
 	err = tx.QueryRow(c.Context(), `
 		SELECT 
 			s.id,
+			s.user_id,
 			s.subscription_name,
 			COALESCE(s.typ, ''),
 			COALESCE(s.contract_number, ''),
@@ -159,6 +158,7 @@ func AddSubscription(c *fiber.Ctx) error {
 		WHERE s.id = $1
 	`, subscriptionID).Scan(
 		&res.ID,
+		&res.UserID,
 		&res.SubscriptionName,
 		&res.Typ,
 		&res.ContractNumber,
@@ -212,6 +212,7 @@ func GetSubscriptionsByUserID(c *fiber.Ctx) error {
 	sqlStatement := `
 		SELECT 
 			s.id,
+			s.user_id,
 			s.subscription_name,
 			COALESCE(s.typ, ''),
 			COALESCE(s.contract_number, ''),
@@ -260,6 +261,7 @@ func GetSubscriptionsByUserID(c *fiber.Ctx) error {
 
 		err := rows.Scan(
 			&s.ID,
+			&s.UserID,
 			&s.SubscriptionName,
 			&s.Typ,
 			&s.ContractNumber,
@@ -320,6 +322,7 @@ func GetSubscriptionByUserID(c *fiber.Ctx) error {
 	sqlStatement := `
 		SELECT 
 			s.id,
+			s.user_id,
 			s.subscription_name,
 			s.typ,
 			s.contract_number,
@@ -358,6 +361,7 @@ func GetSubscriptionByUserID(c *fiber.Ctx) error {
 
 	err = database.InitiateDataBase().QueryRow(c.Context(), sqlStatement, subscriptionID, userID).Scan(
 		&s.ID,
+		&s.UserID,
 		&s.SubscriptionName,
 		&s.Typ,
 		&s.ContractNumber,
