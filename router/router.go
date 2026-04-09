@@ -51,7 +51,7 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	user.Delete("/tickets/:id", userhandler.DeleteTicket)
 	user.Post("/tickets/:id/reply", sharedhandler.ReplyToTicket)
 
-	admin := app.Group("/admin/api/v1")
+	admin := app.Group("/api/v1/admin")
 
 	admin.Use(utils.JWTMiddleware(jwtSecret))
 	admin.Use(utils.RequireRole("admin"))
