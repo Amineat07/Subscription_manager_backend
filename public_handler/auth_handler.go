@@ -136,8 +136,8 @@ func UserLogin(c *fiber.Ctx) error {
 		Value:    token,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HTTPOnly: true,
-		Secure:   true,
-		SameSite: "Strict",
+		Secure:   false,
+		SameSite: "lax",
 	})
 
 	return c.Status(fiber.StatusOK).JSON(user)
