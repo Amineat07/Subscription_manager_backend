@@ -43,9 +43,9 @@ func CreateTicket(c *fiber.Ctx) error {
 	}
 
 	sqlstatement := `
-    INSERT INTO tickets (title, description, link, priority, user_id, created_by, updated_by)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING id,user_id, title, description, COALESCE(link, ''), priority, status, created_by, created_at, updated_by, updated_at
+    INSERT INTO tickets (title,type, description, link, priority, user_id, created_by, updated_by)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id,user_id, title,type, description, COALESCE(link, ''), priority, status, created_by, created_at, updated_by, updated_at
 
 `
 
@@ -54,6 +54,7 @@ func CreateTicket(c *fiber.Ctx) error {
 		c.Context(),
 		sqlstatement,
 		req.Title,
+		req.Type,
 		req.Description,
 		req.Link,
 		req.Priority,
@@ -64,6 +65,7 @@ func CreateTicket(c *fiber.Ctx) error {
 		&inserted.ID,
 		&inserted.UserID,
 		&inserted.Title,
+		&inserted.Type,
 		&inserted.Description,
 		&inserted.Link,
 		&inserted.Priority,
@@ -93,7 +95,7 @@ func GetMyTickets(c *fiber.Ctx) error {
 	}
 
 	sqlStatement := `
-        SELECT id, user_id, title, description, COALESCE(link,''), priority, status, created_by, created_at, updated_by, updated_at
+        SELECT id, user_id, title, type, description, COALESCE(link,''), priority, status, created_by, created_at, updated_by, updated_at
         FROM tickets 
         WHERE user_id = $1 AND deleted_at IS NULL
     `
@@ -112,6 +114,7 @@ func GetMyTickets(c *fiber.Ctx) error {
 			&t.ID,
 			&t.UserID,
 			&t.Title,
+			&t.Type,
 			&t.Description,
 			&t.Link,
 			&t.Priority,
@@ -187,7 +190,7 @@ func GetTicket(c *fiber.Ctx) error {
 		})
 	}
 
-	sqlStatement := `SELECT id,user_id, title, description, COALESCE(link,''), priority, status, created_by, created_at, updated_by, updated_at
+	sqlStatement := `SELECT id,user_id, title, type, description, COALESCE(link,''), priority, status, created_by, created_at, updated_by, updated_at
 	FROM tickets 
 	WHERE id = $1 AND user_id = $2
 	AND deleted_at IS NULL`
@@ -197,6 +200,7 @@ func GetTicket(c *fiber.Ctx) error {
 		&t.ID,
 		&t.UserID,
 		&t.Title,
+		&t.Type,
 		&t.Description,
 		&t.Link,
 		&t.Priority,
@@ -285,19 +289,21 @@ func UpdateTicket(c *fiber.Ctx) error {
 
 	sqlStatement := `UPDATE tickets
 	SET title = COALESCE(NULLIF($1, ''), title),
-		description = COALESCE(NULLIF($2, ''), description),
-		link = COALESCE(NULLIF($3, ''), link),
-		priority = COALESCE(NULLIF($4, ''), priority),
+		type = COALESCE(NULLIF($2, ''), type),
+		description = COALESCE(NULLIF($3, ''), description),
+		link = COALESCE(NULLIF($4, ''), link),
+		priority = COALESCE(NULLIF($5, ''), priority),
 		updated_at = NOW(),
-		updated_by = $5
-		WHERE id = $6 AND user_id = $7 AND deleted_at IS NULL
-		RETURNING id,user_id,title,description,link,priority,status,created_at,created_by,updated_at,updated_by
+		updated_by = $6
+		WHERE id = $7 AND user_id = $8 AND deleted_at IS NULL
+		RETURNING id,user_id,title,type,description,link,priority,status,created_at,created_by,updated_at,updated_by
 	`
 
 	row := database.InitiateDataBase().QueryRow(
 		c.Context(),
 		sqlStatement,
 		updateTicket.Title,
+		updateTicket.Type,
 		updateTicket.Description,
 		updateTicket.Link,
 		updateTicket.Priority,
@@ -311,6 +317,7 @@ func UpdateTicket(c *fiber.Ctx) error {
 		&updated.ID,
 		&updated.UserID,
 		&updated.Title,
+		&updated.Type,
 		&updated.Description,
 		&updated.Link,
 		&updated.Priority,

@@ -3,14 +3,16 @@ package data
 import "time"
 
 type TicketRequest struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	Title       string `json:"title" validate:"required"`
+	Type        string `json:"type" validate:"required"`
+	Description string `json:"description" validate:"required"`
 	Link        string `json:"link"`
-	Priority    string `json:"priority"`
+	Priority    string `json:"priority" validate:"required"`
 }
 
 type TicketUpdateRequest struct {
 	Title       string    `json:"title"`
+	Type        string    `json:"type"`
 	Description string    `json:"description"`
 	Link        string    `json:"link"`
 	Priority    string    `json:"priority"`
@@ -27,10 +29,11 @@ type TicketReplyRequest struct {
 type TicketResponse struct {
 	ID          int64                 `json:"id"`
 	UserID      int64                 `json:"user_id"`
-	Title       string                `json:"title" validate:"required"`
-	Description string                `json:"description" validate:"required"`
+	Title       string                `json:"title"`
+	Type        string                `json:"type"`
+	Description string                `json:"description"`
 	Link        string                `json:"link"`
-	Priority    string                `json:"priority" validate:"required"`
+	Priority    string                `json:"priority"`
 	Status      string                `json:"status"`
 	CreatedBy   string                `json:"created_by"`
 	CreatedAt   time.Time             `json:"created_at"`
