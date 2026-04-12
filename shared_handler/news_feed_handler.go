@@ -11,7 +11,7 @@ import (
 func GetAllNewsFeed(c *fiber.Ctx) error {
 
 	sqlStatement := `SELECT id,title,content,image_url,is_published,scheduled_at,published_at,created_by,created_at,updated_by,updated_at
-	FROM news_feed WHERE deleted_at IS NULL`
+	FROM news_feed WHERE is_published IS TRUE AND deleted_at IS NULL`
 
 	rows, err := database.InitiateDataBase().Query(c.Context(), sqlStatement)
 	if err != nil {
@@ -62,7 +62,7 @@ func GetNewsFeed(c *fiber.Ctx) error {
 	}
 
 	sqlStatement := `SELECT id,title,content,image_url,is_published,scheduled_at,published_at,created_by,created_at,updated_by,updated_at
-	FROM news_feed WHERE id =$1 AND deleted_at IS NULL`
+	FROM news_feed WHERE id =$1 AND is_published IS TRUE AND deleted_at IS NULL`
 
 	var nf data.NewsFeedResponse
 
