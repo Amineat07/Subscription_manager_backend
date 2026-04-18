@@ -136,9 +136,12 @@ func UserLogin(c *fiber.Ctx) error {
 		Value:    token,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HTTPOnly: true,
-		Secure:   false,
+		Secure:   false, //should be true when the domain has SSL certificate
 		SameSite: "lax",
 	})
 
-	return c.Status(fiber.StatusOK).JSON(user)
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"user" : user,
+		"token" : token,
+	})
 }

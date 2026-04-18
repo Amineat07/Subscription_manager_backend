@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"subscription_manager/data"
 	"subscription_manager/database"
+	ssehandler "subscription_manager/see_handler"
 	"subscription_manager/utils"
 	"time"
 
@@ -84,6 +85,9 @@ func AdminCreateNewsFeed(c *fiber.Ctx) error {
 			"error": err.Error(),
 		})
 	}
+
+	ssehandler.BroadcastNewsFeed(inserted)
+
 	return c.Status(fiber.StatusCreated).JSON(inserted)
 }
 
@@ -153,6 +157,9 @@ func AdminUpdateNewsFeed(c *fiber.Ctx) error {
 			"error": err.Error(),
 		})
 	}
+
+	ssehandler.BroadcastNewsFeed(updated)
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "ticket updated successfully",
 		"ticket":  updated,

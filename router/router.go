@@ -4,6 +4,7 @@ import (
 	"os"
 	adminhandler "subscription_manager/admin_handler"
 	publichandler "subscription_manager/public_handler"
+	ssehandler "subscription_manager/see_handler"
 	sharedhandler "subscription_manager/shared_handler"
 	userhandler "subscription_manager/user_handler"
 	"subscription_manager/utils"
@@ -43,6 +44,7 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 
 	user.Get("/newsfeed", sharedhandler.GetAllNewsFeed)
 	user.Get("/newsfeed/:id", sharedhandler.GetNewsFeed)
+	user.Get("/sse/newsfeed", ssehandler.NewsFeedSSE)
 
 	user.Post("/tickets", userhandler.CreateTicket)
 	user.Get("/tickets", userhandler.GetMyTickets)
@@ -71,6 +73,7 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	admin.Get("/newsfeed/:id", sharedhandler.GetNewsFeed)
 	admin.Patch("/newsfeed/:id", adminhandler.AdminUpdateNewsFeed)
 	admin.Delete("/newsfeed/:id", adminhandler.AdminDeleteNewsFeed)
+	admin.Get("/sse/newsfeed", ssehandler.NewsFeedSSE)
 
 	admin.Get("/tickets", adminhandler.AdminGetTickets)
 	admin.Get("/tickets/:id", adminhandler.AdminGetTicketsByUserID)
