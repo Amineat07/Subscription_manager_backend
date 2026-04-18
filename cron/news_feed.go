@@ -48,7 +48,7 @@ func PublishScheduledNews() {
 			continue
 		}
 
-		ssehandler.BroadcastNewsFeed(item)
+		ssehandler.BroadcastNewsFeed(item, "published")
 		log.Printf("cronjob: broadcasted newsfeed id=%d\n", item.ID)
 	}
 

@@ -10,8 +10,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+type SSEMessage struct {
+	Event string
+	Data  []byte
+}
+
 var (
-	clients = make(map[chan []byte]bool)
+	clients = make(map[chan SSEMessage]bool)
 	mu      sync.RWMutex
 )
 
@@ -21,7 +26,7 @@ func NewsFeedSSE(c *fiber.Ctx) error {
 	c.Set("Connection", "keep-alive")
 	c.Set("Transfer-Encoding", "chunked")
 
-	ch := make(chan []byte, 10)
+	ch := make(chan SSEMessage, 10)
 
 	mu.Lock()
 	clients[ch] = true
@@ -47,14 +52,15 @@ func NewsFeedSSE(c *fiber.Ctx) error {
 				if !ok {
 					return
 				}
-				fmt.Fprintf(w, "data: %s\n\n", msg)
+				fmt.Fprintf(w, "event: %s\n", msg.Event)
+				fmt.Fprintf(w, "data: %s\n\n", msg.Data)
 				if err := w.Flush(); err != nil {
-					return 
+					return
 				}
 			case <-ticker.C:
 				fmt.Fprintf(w, ": heartbeat\n\n")
 				if err := w.Flush(); err != nil {
-					return 
+					return
 				}
 			}
 		}
@@ -62,7 +68,9 @@ func NewsFeedSSE(c *fiber.Ctx) error {
 
 	return nil
 }
-func BroadcastNewsFeed(data interface{}) {
+
+
+func BroadcastNewsFeed(data interface{}, eventType string) {
 	payload, err := json.Marshal(data)
 	if err != nil {
 		return
@@ -73,7 +81,7 @@ func BroadcastNewsFeed(data interface{}) {
 
 	for ch := range clients {
 		select {
-		case ch <- payload:
+		case ch <- SSEMessage{Event: eventType, Data: payload}:
 		default:
 		}
 	}

@@ -86,7 +86,7 @@ func AdminCreateNewsFeed(c *fiber.Ctx) error {
 		})
 	}
 
-	ssehandler.BroadcastNewsFeed(inserted)
+	ssehandler.BroadcastNewsFeed(inserted, "created")
 
 	return c.Status(fiber.StatusCreated).JSON(inserted)
 }
@@ -158,7 +158,7 @@ func AdminUpdateNewsFeed(c *fiber.Ctx) error {
 		})
 	}
 
-	ssehandler.BroadcastNewsFeed(updated)
+	ssehandler.BroadcastNewsFeed(updated, "updated")
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "ticket updated successfully",
