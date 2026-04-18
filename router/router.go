@@ -58,6 +58,8 @@ func SetupRouter(app *fiber.App, con *pgxpool.Pool) {
 	admin.Use(utils.JWTMiddleware(jwtSecret))
 	admin.Use(utils.RequireRole("admin"))
 
+	admin.Get("/dashboard/stats", adminhandler.AdminDashboardStats)
+
 	admin.Get("/users", adminhandler.AdminListUsers)
 	admin.Get("/users/:id", adminhandler.AdminGetUser)
 	admin.Patch("/users/:id", adminhandler.AdminUpdateUserById)
